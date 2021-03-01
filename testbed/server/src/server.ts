@@ -165,7 +165,8 @@ connection.onInitialize((params, cancel, progress): Thenable<InitializeResult> |
 				callHierarchyProvider: true,
 				selectionRangeProvider: { workDoneProgress: true },
 				diagnosticProvider: {
-					identifier: "testbed"
+					identifier: "testbed",
+					mode: Proposed.DiagnosticPullModeFlags.onOpen | Proposed.DiagnosticPullModeFlags.onType
 				}
 			}
 		};
@@ -284,7 +285,7 @@ connection.onHover((textPosition): Hover => {
 	};
 });
 
-connection.languages.onDiagnostic(async (param) => {
+connection.languages.diagnostics.on(async (param) => {
 	const uri = URI.parse(param.textDocument.uri);
 	const document = documents.get(param.textDocument.uri);
 	const content = document !== undefined
@@ -293,7 +294,7 @@ connection.languages.onDiagnostic(async (param) => {
 			? await pfs.readFile(uri.fsPath, { encoding: 'utf8'} )
 			: undefined;
 	if (content === undefined) {
-		return [];
+		return { items: [] };
 	}
 	const result: Diagnostic[] = [];
 	const lines: string[] = content.match(/^.*([\n\r]+|$)/gm);
@@ -308,7 +309,7 @@ connection.languages.onDiagnostic(async (param) => {
 		}
 		lineNumber++;
 	}
-	return result;
+	return { items: result };
 })
 
 connection.onCompletion((params, token): CompletionItem[] => {
